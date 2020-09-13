@@ -1,7 +1,7 @@
 const Sequencer = {
     options: {
-        tempo: 125,
-        barLength: 16,
+        TEMPO: 125,
+        BAR_LENGTH: 16,
         sixteenth:4,
         minuteSeconds:60,
         freqOne: 500,
@@ -29,7 +29,7 @@ const Sequencer = {
         if (!this.audioContext) {
             this.audioContext = new AudioContext();
         }
-        this.secondsPerBeat = this.options.minuteSeconds/this.options.tempo;
+        this.secondsPerBeat = this.options.minuteSeconds/this.options.TEMPO;
         this.counterTimeValue = this.secondsPerBeat/this.options.sixteenth; //16th note (4/4 ) => Each beat has 4 subdivisions
         
         this.constructGrid();
@@ -48,8 +48,9 @@ const Sequencer = {
     start() {
         this.futureTickTime = this.audioContext.currentTime;
         this.metronomeVolume = this.audioContext.createGain();
-        this.metronomeVolume.gain.value = 0;
+        this.metronomeVolume.gain.setValueAtTime(0, this.audioContext.currentTime);
         this.oscillator = this.audioContext.createOscillator();
+        this.biquadFilter = this.audioContext.createBiquadFilter();
 
         this.loadEvents();
         this.play();
@@ -114,20 +115,51 @@ const Sequencer = {
         this.sequenceGridToggler(".track-2-container", this.gridPositions.snareTrack);
         this.sequenceGridToggler(".track-3-container", this.gridPositions.hatTrack);
         this.sequenceGridToggler(".track-4-container", this.gridPositions.shakerTrack);
+
+    },
+    setMetronomeGainValue(e) {
+        console.log(e.value);
+        
+        if(this.metronomeVolume) {
+            this.metronomeVolume.gain.setValueAtTime(e.value, this.audioContext.currentTime);
+        }
     },
 
     playMetronome(time) {
         this.oscillator = this.audioContext.createOscillator();
-        this.oscillator.connect(this.metronomeVolume);
+        this.oscillator.type = 'square';
+       
+        //this.oscillator.connect(this.metronomeVolume);
+        this.oscillator.connect(this.biquadFilter);
+        this.biquadFilter.connect(this.metronomeVolume);
         this.metronomeVolume.connect(this.audioContext.destination);
+
+        this.biquadFilter.type = "highpass";
+        this.biquadFilter.frequency.setValueAtTime(1000, this.audioContext.currentTime);
+        this.biquadFilter.gain.setValueAtTime(25, this.audioContext.currentTime);
         
-        if (this.counter === 1) {
-            this.oscillator.frequency.value = this.options.freqOne;
-        } else {
-            this.oscillator.frequency.value =  this.options.freqTwo;
-        }
-        this.oscillator.start(time);
-        this.oscillator.stop(time + 0.1);  
+        if (this.counter === 1 || (this.counter - 1)%4 === 0) {
+            if(this.counter === 1) {
+                this
+                    .oscillator
+                    .frequency
+                    .setValueAtTime(
+                        this.options.freqOne, 
+                        this.audioContext.currentTime
+                    );
+            } else {
+                this
+                    .oscillator
+                    .frequency
+                    .setValueAtTime(
+                        this.options.freqTwo, 
+                        this.audioContext.currentTime
+                    );
+            }
+           
+            this.oscillator.start(time);
+            this.oscillator.stop(time + 0.1); 
+        } 
     },
 
     play() {
@@ -146,13 +178,14 @@ const Sequencer = {
     playTick(tempo) {
         //console.log("This is 16th beat : " + this.counter);
        
-        this.options.tempo = tempo;
-        this.secondsPerBeat = this.options.minuteSeconds/this.options.tempo;
+        this.options.TEMPO = tempo;
+        this.secondsPerBeat = this.options.minuteSeconds/this.options.TEMPO;
         this.counterTimeValue = this.secondsPerBeat/this.options.sixteenth; //16th note (4/4 ) => Each beat has 4 subdivisions
-        
+        this.displayTimer();
+        this.playMetronome(this.futureTickTime);
         this.counter+=1;
         
-        if(this.counter > this.options.barLength) { 
+        if(this.counter > this.options.BAR_LENGTH) { 
             this.counter = 1;
         }
     },
@@ -175,15 +208,14 @@ const Sequencer = {
 
     scheduler() {
         if (this.futureTickTime < this.audioContext.currentTime + 0.1) {
-            this.displayTimer();
-            this.playMetronome(this.futureTickTime);
             this.futureTickTime += this.counterTimeValue;
             //console.log(this.futureTickTime);
             this.scheduleSound(this.gridPositions.kickTrack, this.samples.kick, this.counter, this.futureTickTime - this.audioContext.currentTime);
             this.scheduleSound(this.gridPositions.snareTrack, this.samples.snare, this.counter, this.futureTickTime - this.audioContext.currentTime);
             this.scheduleSound(this.gridPositions.hatTrack, this.samples.hat, this.counter, this.futureTickTime - this.audioContext.currentTime);
             this.scheduleSound(this.gridPositions.shakerTrack, this.samples.shaker, this.counter, this.futureTickTime - this.audioContext.currentTime);
-            this.playTick(this.options.tempo);
+            this.playTick(this.options.TEMPO);
+            
         }
         this.timerId = window.setTimeout(this.scheduler.bind(this), 0);
     },
