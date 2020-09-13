@@ -35,7 +35,6 @@ Audio sample step sequencer (4/4)
 * [Contributing](#contributing)
 * [License](#license)
 * [Contact](#contact)
-* [Acknowledgements](#acknowledgements)
 
 
 
