@@ -64,3 +64,5 @@ const AudioLoader = {
         return path.split(/[\\/]/).pop().split('.')[0];
     }
 }
+
+export {AudioLoader as default}
