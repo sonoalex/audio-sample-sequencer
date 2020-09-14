@@ -1,5 +1,5 @@
 (function() {
-    let App = {
+    let DAW = {
         main: document.getElementById('clicker'),
         metronome: document.getElementById('metronome'),
         tempo: document.getElementById('tempo'),
@@ -38,6 +38,6 @@
         }
     }
 
-    App.init();
+    DAW.init();
     
 })();

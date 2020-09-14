@@ -25,7 +25,6 @@ const Sequencer = {
     grid: document.getElementById('app-grid'),
     
     init() {
-    
         if (!this.audioContext) {
             this.audioContext = new AudioContext();
         }
@@ -65,9 +64,10 @@ const Sequencer = {
             let div = document.createElement('div');
             div.classList.add(`track-${i}-container`);
             this.grid.appendChild(div);
-            for (let j = 1; j <= 16; j++) {
+            for (let j = 1; j <= this.options.BAR_LENGTH; j++) {
                 let track = this.grid.getElementsByClassName(`track-${i}-container`).item(0);
                 let item = document.createElement('div');
+                if (j==1) item.classList+='timer '
                 if ((j - 1)%4 == 0) {
                     item.classList+=`grid-item track-step-double step-${j}`;
                 } else {
@@ -93,33 +93,48 @@ const Sequencer = {
             }
         });
     },
-    sequenceGridToggler(domEle, arr) {
-        $(domEle).on('mousedown', '.grid-item', function() {
-            let gridIndexValue = $(this).index();
-            let offset = gridIndexValue + 1;
-            let index = arr.indexOf(offset);
-            if (index > -1) {
-                arr.splice(index, 1);
-                console.table('splice',arr);
-                $(this).css('background', '');
-            } else {
-                arr.push(offset);
-                $(this).css('background', 'purple');
-                console.table('push',arr);
+    sequenceGridToggler(domEleClass, arr) {
+       
+        let domElements = document.getElementsByClassName(domEleClass);
+        let domEle = domElements.item(0);
+        let elements = domEle.getElementsByClassName('grid-item');
+        for (let item of elements) {    
+            item.addEventListener(
+                'click', 
+                (e) => this.handleGridClick(e, elements, arr)
+            );
+        };
+    },
+    handleGridClick(e, elements, arr) {
+
+        function findIndexInClass(collection, node) {
+            for (var i = 0; i < collection.length; i++) {
+              if (collection[i] === node)
+                return i + 1;
             }
-        });
+            return -1;
+        }
+
+        let target = e.target;
+        let offsetIndex = findIndexInClass(elements, target);
+        let positionIndex = arr.indexOf(offsetIndex);
+        if (positionIndex > -1) {
+            arr.splice(positionIndex, 1);
+            target.style.background = '';
+        } else {
+            arr.push(offsetIndex);
+            target.style.background = 'purple';
+        }          
     },
 
     loadEvents(){
-        this.sequenceGridToggler(".track-1-container", this.gridPositions.kickTrack);
-        this.sequenceGridToggler(".track-2-container", this.gridPositions.snareTrack);
-        this.sequenceGridToggler(".track-3-container", this.gridPositions.hatTrack);
-        this.sequenceGridToggler(".track-4-container", this.gridPositions.shakerTrack);
+        this.sequenceGridToggler("track-1-container", this.gridPositions.kickTrack);
+        this.sequenceGridToggler("track-2-container", this.gridPositions.snareTrack);
+        this.sequenceGridToggler("track-3-container", this.gridPositions.hatTrack);
+        this.sequenceGridToggler("track-4-container", this.gridPositions.shakerTrack);
 
     },
-    setMetronomeGainValue(e) {
-        console.log(e.value);
-        
+    setMetronomeGainValue(e) {        
         if(this.metronomeVolume) {
             this.metronomeVolume.gain.setValueAtTime(e.value, this.audioContext.currentTime);
         }
@@ -194,6 +209,11 @@ const Sequencer = {
 
         $('.timer').removeClass('timer');
         let count;
+        // let timerElements = document.getElementsByClassName('timer');
+        // console.log(timerElements);
+        
+        // [].forEach.call(timerElements, (item)=>{item.classList.remove("timer")});
+        
         if (this.counter === 1) {
             return;
         } else if(this.counter === 16){
@@ -201,9 +221,9 @@ const Sequencer = {
         } else{
             count = this.counter - 1;
         }
-        let items = $(`.step-${count}`);
-        
-        $(items).addClass('timer');
+
+        let stepElements = document.getElementsByClassName(`step-${count}`);
+        [].forEach.call(stepElements, (item)=>{item.classList.add("timer")});
     },
 
     scheduler() {
