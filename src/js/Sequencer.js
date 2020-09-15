@@ -56,9 +56,7 @@ const Sequencer = {
             .setValueAtTime(
                 0, 
                 this.audioContext.currentTime
-            );  
-
-        this.metronome.setOscillator(this.audioContext.createOscillator());
+            ); 
 
         this.loadEvents();
         this.play();
