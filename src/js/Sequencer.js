@@ -1,5 +1,6 @@
 import AudioLoader from './utils/audiolib';
 import Metronome from './metronome';
+import GridRenderer from './ui/gridRenderer';
 
 const Sequencer = {
     options: {
@@ -25,7 +26,7 @@ const Sequencer = {
     },
     timerId:undefined,
     isPlaying:false,
-    grid: document.getElementById('app-grid'),
+   
     
     init() {
         if (!this.audioContext) {
@@ -64,51 +65,18 @@ const Sequencer = {
 
     constructGrid() {
 
-        this.grid.innerHTML='';
-        let i = 1;
-
-        for (let el in this.gridPositions) {
-            let div = document.createElement('div');
-            div.classList.add(`track-${i}-container`);
-            this.grid.appendChild(div);
-            for (let j = 1; j <= this.options.BAR_LENGTH; j++) {
-                let track = this.grid.getElementsByClassName(`track-${i}-container`).item(0);
-                let item = document.createElement('div');
-                if (j==1) item.classList+='timer ';
-                if ((j - 1)%4 == 0) {
-                    item.classList+=`grid-item track-step-double step-${j}`;
-                } else {
-                    item.classList+=`grid-item track-step step-${j}`;
-                }
-                
-                track.appendChild(item);  
-                this.drawPatterns(item,i,j);
-            }
-            i++;
-        }
+        GridRenderer.render(this.gridPositions, this.options.BAR_LENGTH);
     },
 
-    drawPatterns(item, i, j){
-        console.log('drawing...');
-        Object.entries(this.gridPositions)[i - 1].forEach(el => {
-            if (Array.isArray(el)) {
-                if (el.indexOf(j) > -1) {
-                    item.style.background = 'purple';
-                } else {
-                    item.style.background = '';
-                }
-            }
-        });
-    },
     sequenceGridToggler(domEleClass, arr) {
        
         let domElements = document.getElementsByClassName(domEleClass);
         let domEle = domElements.item(0);
-        let elements = domEle.getElementsByClassName('grid-item');
-        for (let item of elements) {    
+        let gridItemElements = domEle.getElementsByClassName('grid-item');
+        for (let item of gridItemElements) {    
             item.addEventListener(
                 'click', 
-                (e) => this.handleGridClick(e, elements, arr)
+                (e) => this.handleGridClick(e, gridItemElements, arr)
             );
         };
     },
