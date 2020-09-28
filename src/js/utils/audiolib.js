@@ -22,23 +22,30 @@ const AudioLoader = {
      * 
      * @param {*} filePath 
      */
-    async audioFileLoader(filePath) {
+    async audioFileLoader(filePath, callback) {
         let soundObj = {};
         let playSound = undefined;
         soundObj.filePath = filePath;
+
         soundObj.name = this.basename(filePath);
 
-        return await this.getFile(filePath).then((audioBuffer)=>{
+        return await this.getFile(filePath, callback).then((audioBuffer)=>{
             soundObj.soundToPlay = audioBuffer;
             soundObj.play = (time, setStart, setDuration) => {
                 playSound = this.audioContext.createBufferSource();
                 playSound.buffer = soundObj.soundToPlay;
-                playSound.connect(this.audioContext.destination);
-                playSound.start(
+                //playSound.connect(this.audioContext.destination);
+                playSound.start( 
                     this.audioContext.currentTime + time || this.audioContext.currentTime,
                     setStart || 0,
                     setDuration || soundObj.soundToPlay.duration
                 );
+                
+                if (typeof callback === "function") {
+                    callback(playSound, this.audioContext);
+                } else {
+                    playSound.connect(this.audioContext.destination);
+                }
             };
     
             soundObj.stop = (time) => {
@@ -54,8 +61,18 @@ const AudioLoader = {
      * @param {*} object 
      */
     async audioBatchLoader(object){
+        let callback;
+    
         for (let prop in object) {
-            object[prop] = await this.audioFileLoader(object[prop]);
+            if (typeof object[prop] === 'function') {
+                callback = object[prop];
+                delete object[prop];
+                
+            }
+        }
+
+        for (let prop in object) {
+            object[prop] = await this.audioFileLoader(object[prop], callback);
         }
 
         return object;

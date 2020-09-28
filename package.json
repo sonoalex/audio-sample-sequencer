@@ -35,6 +35,7 @@
     "benchmark": "^2.1.4",
     "css-loader": "^3.5.3",
     "jquery": "^3.5.1",
+    "jquery-knob": "^1.2.11",
     "standardized-audio-context": "^24.1.26",
     "style-loader": "^1.2.1",
     "webpack-dev-server": "^3.11.0"

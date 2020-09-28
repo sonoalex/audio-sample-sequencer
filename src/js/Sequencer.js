@@ -39,7 +39,13 @@ const Sequencer = {
             kick: "audio/kick.wav",
             snare: "audio/snare.wav",
             hat: "audio/hat.wav",
-            shaker: "audio/shaker.wav"
+            shaker: "audio/shaker.wav",
+            nodes: (sound, audioContext) => {
+                let gain = new GainNode(audioContext);
+                gain.gain.value = 1;
+                sound.connect(gain);
+                gain.connect(audioContext.destination);
+            }
         }).then(samples => {
             this.samples = samples;
             this.start();
@@ -170,13 +176,11 @@ const Sequencer = {
     },
 
     displayTimer() {
-        $(".timer").removeClass("timer");
+        
         let count;
-
-        // That way does not work well at all
-        // let timerElements = document.getElementsByClassName('timer');
-        // console.log(timerElements);
-        // [].forEach.call(timerElements, (item)=>{item.classList.remove("timer")});
+        let timerElements = document.querySelectorAll('.timer');
+        
+        [].forEach.call(timerElements, (item)=>{item.classList.remove("timer")});
 
         if (this.counter === 1) {
             return;
