@@ -1,7 +1,7 @@
 const $ = require( "jquery" );
 window.jQuery = $;
 window.$ = $;
-
+require('jquery-knob');
 import AudioLoader from './utils/audiolib';
 import GridRenderer from './ui/gridRenderer';
 import Metronome from './metronome';

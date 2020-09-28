@@ -1,8 +1,7 @@
 class Metronome {
-    
     constructor(gainNode) {
         this.gainNode = gainNode;
-        console.log('Hello from Metronome....');
+        console.log("Hello from Metronome....");
     }
 
     getOscillator() {
@@ -23,7 +22,7 @@ class Metronome {
     }
 
     prepareOscillator() {
-        this.oscillator.type = 'square';
+        this.oscillator.type = "square";
         this.oscillator.connect(this.gainNode);
     }
     start(time) {
@@ -35,4 +34,4 @@ class Metronome {
     }
 }
 
-export {Metronome as default};
+export { Metronome as default };

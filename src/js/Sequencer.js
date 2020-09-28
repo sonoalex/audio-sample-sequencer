@@ -1,91 +1,87 @@
-import AudioLoader from './utils/audiolib';
-import Metronome from './metronome';
-import GridRenderer from './ui/gridRenderer';
+import AudioLoader from "./utils/audiolib";
+import Metronome from "./metronome";
+import GridRenderer from "./ui/gridRenderer";
 
 const Sequencer = {
     options: {
         TEMPO: 125,
         BAR_LENGTH: 16,
-        sixteenth:4,
-        minuteSeconds:60,
+        sixteenth: 4,
+        minuteSeconds: 60,
         freqOne: 500,
         freqTwo: 300
+    },
+    audioContext: null,
+    futureTickTime: null,
+    counter: 1,
+    oscillator: null,
+    metronomeVolume: null,
+    samples: null,
+    gridPositions: {
+        kickTrack: [],
+        snareTrack: [],
+        hatTrack: [],
+        shakerTrack: []
+    },
+    timerId: undefined,
+    isPlaying: false,
 
-    },
-    audioContext:null,
-    futureTickTime:null,
-    counter:1,
-    oscillator:null,
-    metronomeVolume : null,
-    samples:null,
-    gridPositions:{
-        kickTrack:[],
-        snareTrack:[],
-        hatTrack:[],
-        shakerTrack:[]
-    },
-    timerId:undefined,
-    isPlaying:false,
-   
-    
     init() {
         if (!this.audioContext) {
             this.audioContext = new AudioContext();
         }
-        this.secondsPerBeat = this.options.minuteSeconds/this.options.TEMPO;
-        this.counterTimeValue = this.secondsPerBeat/this.options.sixteenth; //16th note (4/4 ) => Each beat has 4 subdivisions
-        
+        this.secondsPerBeat = this.options.minuteSeconds / this.options.TEMPO;
+        this.counterTimeValue = this.secondsPerBeat / this.options.sixteenth; //16th note (4/4 ) => Each beat has 4 subdivisions
+
         this.constructGrid();
 
         AudioLoader.audioBatchLoader({
-            kick:'audio/kick.wav',
-            snare:'audio/snare.wav',
-            hat:'audio/hat.wav',
-            shaker:'audio/shaker.wav'
+            kick: "audio/kick.wav",
+            snare: "audio/snare.wav",
+            hat: "audio/hat.wav",
+            shaker: "audio/shaker.wav",
+            nodes: (sound, audioContext) => {
+                let gain = new GainNode(audioContext);
+                gain.gain.value = 1;
+                sound.connect(gain);
+                gain.connect(audioContext.destination);
+            }
         }).then(samples => {
             this.samples = samples;
             this.start();
-       });
+        });
     },
 
     start() {
         this.futureTickTime = this.audioContext.currentTime;
-        
+
         this.metronome = new Metronome(new GainNode(this.audioContext));
         this.metronome
             .getGain()
-            .setValueAtTime(
-                0, 
-                this.audioContext.currentTime
-            ); 
+            .setValueAtTime(0, this.audioContext.currentTime);
 
         this.loadEvents();
         this.play();
     },
 
     constructGrid() {
-
         GridRenderer.render(this.gridPositions, this.options.BAR_LENGTH);
     },
 
     sequenceGridToggler(domEleClass, arr) {
-       
         let domElements = document.getElementsByClassName(domEleClass);
         let domEle = domElements.item(0);
-        let gridItemElements = domEle.getElementsByClassName('grid-item');
-        for (let item of gridItemElements) {    
-            item.addEventListener(
-                'click', 
-                (e) => this.handleGridClick(e, gridItemElements, arr)
+        let gridItemElements = domEle.getElementsByClassName("grid-item");
+        for (let item of gridItemElements) {
+            item.addEventListener("click", e =>
+                this.handleGridClick(e, gridItemElements, arr)
             );
-        };
+        }
     },
     handleGridClick(e, elements, arr) {
-
         function findIndexInClass(collection, node) {
             for (var i = 0; i < collection.length; i++) {
-              if (collection[i] === node)
-                return i + 1;
+                if (collection[i] === node) return i + 1;
             }
             return -1;
         }
@@ -95,67 +91,71 @@ const Sequencer = {
         let positionIndex = arr.indexOf(offsetIndex);
         if (positionIndex > -1) {
             arr.splice(positionIndex, 1);
-            target.style.background = '';
+            target.style.background = "";
         } else {
             arr.push(offsetIndex);
-            target.style.background = 'purple';
-        }          
+            target.style.background = "purple";
+        }
     },
 
-    loadEvents(){
-        this.sequenceGridToggler("track-1-container", this.gridPositions.kickTrack);
-        this.sequenceGridToggler("track-2-container", this.gridPositions.snareTrack);
-        this.sequenceGridToggler("track-3-container", this.gridPositions.hatTrack);
-        this.sequenceGridToggler("track-4-container", this.gridPositions.shakerTrack);
-
+    loadEvents() {
+        this.sequenceGridToggler(
+            "track-1-container",
+            this.gridPositions.kickTrack
+        );
+        this.sequenceGridToggler(
+            "track-2-container",
+            this.gridPositions.snareTrack
+        );
+        this.sequenceGridToggler(
+            "track-3-container",
+            this.gridPositions.hatTrack
+        );
+        this.sequenceGridToggler(
+            "track-4-container",
+            this.gridPositions.shakerTrack
+        );
     },
 
-    setMetronomeGainValue(e) {        
+    setMetronomeGainValue(e) {
         this.metronome
             .getGain()
-            .setValueAtTime(
-                e.value, 
-                this.audioContext.currentTime
-            );
+            .setValueAtTime(e.value, this.audioContext.currentTime);
     },
 
     playMetronome(time) {
-
         this.metronome.setOscillator(this.audioContext.createOscillator());
         this.metronome.getVolume().connect(this.audioContext.destination);
 
-        if (this.counter === 1 || (this.counter - 1)%4 === 0) {
-            if(this.counter === 1) {
+        if (this.counter === 1 || (this.counter - 1) % 4 === 0) {
+            if (this.counter === 1) {
                 this.metronome
                     .getOscillator()
-                    .frequency
-                    .setValueAtTime(
-                        this.options.freqOne, 
+                    .frequency.setValueAtTime(
+                        this.options.freqOne,
                         this.audioContext.currentTime
-                );
+                    );
             } else {
                 this.metronome
                     .getOscillator()
-                    .frequency
-                    .setValueAtTime(
-                        this.options.freqTwo, 
+                    .frequency.setValueAtTime(
+                        this.options.freqTwo,
                         this.audioContext.currentTime
-                );
+                    );
             }
-           
-           this.metronome.start(time);
-           this.metronome.stop(time);
-        } 
+
+            this.metronome.start(time);
+            this.metronome.stop(time);
+        }
     },
 
     play() {
-
         this.isPlaying = !this.isPlaying;
 
-        if (this.isPlaying) {            
+        if (this.isPlaying) {
             this.counter = 1;
             this.futureTickTime = this.audioContext.currentTime;
-            this.scheduler();    
+            this.scheduler();
         } else {
             window.clearTimeout(this.timerId);
         }
@@ -164,53 +164,71 @@ const Sequencer = {
     playTick(tempo) {
         //console.log("This is 16th beat : " + this.counter);
         this.options.TEMPO = tempo;
-        this.secondsPerBeat = this.options.minuteSeconds/this.options.TEMPO;
-        this.counterTimeValue = this.secondsPerBeat/this.options.sixteenth; //16th note (4/4 ) => Each beat has 4 subdivisions
+        this.secondsPerBeat = this.options.minuteSeconds / this.options.TEMPO;
+        this.counterTimeValue = this.secondsPerBeat / this.options.sixteenth; //16th note (4/4 ) => Each beat has 4 subdivisions
         this.displayTimer();
         this.playMetronome(this.futureTickTime);
-        this.counter+=1;
-        
-        if(this.counter > this.options.BAR_LENGTH) { 
+        this.counter += 1;
+
+        if (this.counter > this.options.BAR_LENGTH) {
             this.counter = 1;
         }
     },
 
     displayTimer() {
-
-        $('.timer').removeClass('timer');
+        
         let count;
+        let timerElements = document.querySelectorAll('.timer');
         
-        // That way does not work well at all
-        // let timerElements = document.getElementsByClassName('timer');
-        // console.log(timerElements);
-        // [].forEach.call(timerElements, (item)=>{item.classList.remove("timer")});
-        
+        [].forEach.call(timerElements, (item)=>{item.classList.remove("timer")});
+
         if (this.counter === 1) {
             return;
-        } else if(this.counter === 16){
+        } else if (this.counter === 16) {
             count = this.counter;
-        } else{
+        } else {
             count = this.counter - 1;
         }
 
         let stepElements = document.getElementsByClassName(`step-${count}`);
-        [].forEach.call(stepElements, (item)=>{item.classList.add("timer")});
+        [].forEach.call(stepElements, item => {
+            item.classList.add("timer");
+        });
     },
 
     scheduler() {
         if (this.futureTickTime < this.audioContext.currentTime + 0.1) {
             this.futureTickTime += this.counterTimeValue;
             //console.log(this.futureTickTime);
-            this.scheduleSound(this.gridPositions.kickTrack, this.samples.kick, this.counter, this.futureTickTime - this.audioContext.currentTime);
-            this.scheduleSound(this.gridPositions.snareTrack, this.samples.snare, this.counter, this.futureTickTime - this.audioContext.currentTime);
-            this.scheduleSound(this.gridPositions.hatTrack, this.samples.hat, this.counter, this.futureTickTime - this.audioContext.currentTime);
-            this.scheduleSound(this.gridPositions.shakerTrack, this.samples.shaker, this.counter, this.futureTickTime - this.audioContext.currentTime);
+            this.scheduleSound(
+                this.gridPositions.kickTrack,
+                this.samples.kick,
+                this.counter,
+                this.futureTickTime - this.audioContext.currentTime
+            );
+            this.scheduleSound(
+                this.gridPositions.snareTrack,
+                this.samples.snare,
+                this.counter,
+                this.futureTickTime - this.audioContext.currentTime
+            );
+            this.scheduleSound(
+                this.gridPositions.hatTrack,
+                this.samples.hat,
+                this.counter,
+                this.futureTickTime - this.audioContext.currentTime
+            );
+            this.scheduleSound(
+                this.gridPositions.shakerTrack,
+                this.samples.shaker,
+                this.counter,
+                this.futureTickTime - this.audioContext.currentTime
+            );
             this.playTick(this.options.TEMPO);
-            
         }
         this.timerId = window.setTimeout(this.scheduler.bind(this), 0);
     },
-    
+
     scheduleSound(trackArray, sound, count, time) {
         for (let i = 0; i < trackArray.length; i++) {
             if (count === trackArray[i]) {
@@ -220,4 +238,4 @@ const Sequencer = {
     }
 };
 
-export {Sequencer as default}
+export { Sequencer as default };
