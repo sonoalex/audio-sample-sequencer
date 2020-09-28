@@ -34,7 +34,6 @@ const AudioLoader = {
             soundObj.play = (time, setStart, setDuration) => {
                 playSound = this.audioContext.createBufferSource();
                 playSound.buffer = soundObj.soundToPlay;
-                //playSound.connect(this.audioContext.destination);
                 playSound.start( 
                     this.audioContext.currentTime + time || this.audioContext.currentTime,
                     setStart || 0,

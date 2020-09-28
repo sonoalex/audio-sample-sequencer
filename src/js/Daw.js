@@ -20,8 +20,7 @@ import Sequencer from "./sequencer";
             });
 
             this.metronome.addEventListener("click", e => {
-                //if (!Sequencer.metronomeVolume) return;
-
+                
                 if (!this.muted) {
                     Sequencer.setMetronomeGainValue({ value: 0 });
                     this.metronome.innerHTML = "[ON] METRONOME";
